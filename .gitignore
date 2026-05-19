@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# build output (các file được sinh ra sau khi bạn chạy lệnh build)
+dist/
+lib/
+build/
+out/
+*.log
+*.sqlite
+
+# system files (đối với người dùng Mac như bạn)
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ide settings (thư mục cấu hình của VS Code hoặc WebStorm)
+.vscode/
+.idea/
+
+# npm/yarn/bun files
+package-lock.json
+yarn.lock
+bun.lockb
+
+# custom (giữ lại nếu bạn muốn track các file .ts .js của chính mình)
+# nhưng bỏ qua các file output của compiler
+*.tsbuildinfo
