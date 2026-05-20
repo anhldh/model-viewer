@@ -18,11 +18,12 @@ import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.j
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { GLTF, GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader.js";
+import { gltfLodLoader } from "@anhldh/gltf-lod-loader";
 
 import ModelViewerElementBase from "../model-viewer-base.js";
 import { CacheEvictionPolicy } from "../utilities/cache-eviction-policy.js";
 
-// import {GLTFAnimationPointerExtension} from './GLTFAnimationPointerExtension.js';
+import { GLTFAnimationPointerExtension } from "./GLTFAnimationPointerExtension.js";
 import GLTFMaterialsVariantsExtension from "./gltf-instance/VariantMaterialLoaderPlugin.js";
 import { GLTFInstance, GLTFInstanceConstructor } from "./GLTFInstance.js";
 
@@ -168,10 +169,17 @@ export class CachingGLTFLoader<
     this[$loader].setKTX2Loader(ktx2Loader);
   }
 
-  protected [$loader]: GLTFLoader = new GLTFLoader().register(
-    (parser) => new GLTFMaterialsVariantsExtension(parser),
-  );
-  // .register(parser => new GLTFAnimationPointerExtension(parser));
+  /**
+   * Wire gltf-lod-loader's progressive extension into this loader instance.
+   * Must be called after the WebGLRenderer exists. Safe to call once.
+   */
+  initializeProgressive(renderer: WebGLRenderer) {
+    gltfLodLoader(this[$loader], renderer);
+  }
+
+  protected [$loader]: GLTFLoader = new GLTFLoader()
+    .register((parser) => new GLTFMaterialsVariantsExtension(parser))
+    .register((parser) => new GLTFAnimationPointerExtension(parser));
   protected [$GLTFInstance]: T;
 
   protected get [$evictionPolicy](): CacheEvictionPolicy {
