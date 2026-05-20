@@ -28,3 +28,4 @@ bun.lockb
 # custom (giữ lại nếu bạn muốn track các file .ts .js của chính mình)
 # nhưng bỏ qua các file output của compiler
 *.tsbuildinfo
+CLAUDE.md
