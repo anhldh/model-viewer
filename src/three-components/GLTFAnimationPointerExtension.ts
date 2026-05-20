@@ -1,8 +1,7 @@
-/* Modifications copyright 2026 anhldh
- * - Added KHR_animation_pointer support
- * - Added LOD loading via @anhldh/gltf-lod-loader
+/* @license
+ * Copyright 2026 anhldh
+ * Licensed under the Apache License, Version 2.0
  */
-
 import {
   AnimationClip,
   ColorKeyframeTrack,
