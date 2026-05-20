@@ -13,18 +13,33 @@
  * limitations under the License.
  */
 
-import {Event, EventDispatcher, NeutralToneMapping, Vector2, WebGLRenderer} from 'three';
+/* Modifications copyright 2026 anhldh
+ * - Added KHR_animation_pointer support
+ * - Added LOD loading via @anhldh/gltf-lod-loader
+ */
 
-import {$updateEnvironment} from '../features/environment.js';
-import {ModelViewerGlobalConfig} from '../features/loading.js';
-import ModelViewerElementBase, {$canvas, $tick, $updateSize} from '../model-viewer-base.js';
-import {clamp, isDebugMode} from '../utilities.js';
+import {
+  Event,
+  EventDispatcher,
+  NeutralToneMapping,
+  Vector2,
+  WebGLRenderer,
+} from "three";
 
-import {ARRenderer} from './ARRenderer.js';
-import {CachingGLTFLoader} from './CachingGLTFLoader.js';
-import {ModelViewerGLTFInstance} from './gltf-instance/ModelViewerGLTFInstance.js';
-import {ModelScene} from './ModelScene.js';
-import TextureUtils from './TextureUtils.js';
+import { $updateEnvironment } from "../features/environment.js";
+import { ModelViewerGlobalConfig } from "../features/loading.js";
+import ModelViewerElementBase, {
+  $canvas,
+  $tick,
+  $updateSize,
+} from "../model-viewer-base.js";
+import { clamp, isDebugMode } from "../utilities.js";
+
+import { ARRenderer } from "./ARRenderer.js";
+import { CachingGLTFLoader } from "./CachingGLTFLoader.js";
+import { ModelViewerGLTFInstance } from "./gltf-instance/ModelViewerGLTFInstance.js";
+import { ModelScene } from "./ModelScene.js";
+import TextureUtils from "./TextureUtils.js";
 
 export interface RendererOptions {
   powerPreference: string;
@@ -32,7 +47,7 @@ export interface RendererOptions {
 }
 
 export interface ContextLostEvent extends Event {
-  type: 'contextlost';
+  type: "contextlost";
   sourceEvent: WebGLContextEvent;
 }
 
@@ -44,7 +59,7 @@ const MAX_AVG_CHANGE_MS = 5;
 const SCALE_STEPS = [1, 0.79, 0.62, 0.5, 0.4, 0.31, 0.25];
 const DEFAULT_LAST_STEP = 3;
 
-export const DEFAULT_POWER_PREFERENCE: string = 'high-performance';
+export const DEFAULT_POWER_PREFERENCE: string = "high-performance";
 const COMMERCE_EXPOSURE = 1.3;
 
 /**
@@ -58,18 +73,18 @@ const COMMERCE_EXPOSURE = 1.3;
  * Canvas2DRenderingContext if supported for cheaper transferring of
  * the texture.
  */
-export class Renderer extends
-    EventDispatcher<{contextlost: {sourceEvent: WebGLContextEvent}}> {
+export class Renderer extends EventDispatcher<{
+  contextlost: { sourceEvent: WebGLContextEvent };
+}> {
   private static _singleton: Renderer;
 
   static get singleton() {
     if (!this._singleton) {
       this._singleton = new Renderer({
-        powerPreference: (((self as any).ModelViewerElement || {}) as
-                          ModelViewerGlobalConfig)
-                             .powerPreference ||
-            DEFAULT_POWER_PREFERENCE,
-        debug: isDebugMode()
+        powerPreference:
+          (((self as any).ModelViewerElement || {}) as ModelViewerGlobalConfig)
+            .powerPreference || DEFAULT_POWER_PREFERENCE,
+        debug: isDebugMode(),
       });
     }
     return this._singleton;
@@ -83,10 +98,9 @@ export class Renderer extends
 
     this._singleton = new Renderer({
       powerPreference:
-          (((self as any).ModelViewerElement || {}) as ModelViewerGlobalConfig)
-              .powerPreference ||
-          DEFAULT_POWER_PREFERENCE,
-      debug: isDebugMode()
+        (((self as any).ModelViewerElement || {}) as ModelViewerGlobalConfig)
+          .powerPreference || DEFAULT_POWER_PREFERENCE,
+      debug: isDebugMode(),
     });
 
     for (const element of elements) {
@@ -96,7 +110,7 @@ export class Renderer extends
 
   public threeRenderer!: WebGLRenderer;
   public canvas3D: HTMLCanvasElement;
-  public textureUtils: TextureUtils|null;
+  public textureUtils: TextureUtils | null;
   public arRenderer: ARRenderer;
   public loader = new CachingGLTFLoader(ModelViewerGLTFInstance);
   public width = 0;
@@ -110,7 +124,7 @@ export class Renderer extends
   private scaleStep = 0;
   private lastStep = DEFAULT_LAST_STEP;
   private avgFrameDuration =
-      (HIGH_FRAME_DURATION_MS + LOW_FRAME_DURATION_MS) / 2;
+    (HIGH_FRAME_DURATION_MS + LOW_FRAME_DURATION_MS) / 2;
 
   get canRender() {
     return this.threeRenderer != null;
@@ -136,9 +150,9 @@ export class Renderer extends
 
     this.dpr = window.devicePixelRatio;
 
-    this.canvas3D = document.createElement('canvas');
-    this.canvas3D.id = 'webgl-canvas';
-    this.canvas3D.classList.add('show');
+    this.canvas3D = document.createElement("canvas");
+    this.canvas3D.id = "webgl-canvas";
+    this.canvas3D.classList.add("show");
 
     try {
       this.threeRenderer = new WebGLRenderer({
@@ -149,11 +163,11 @@ export class Renderer extends
         preserveDrawingBuffer: true,
       });
       this.threeRenderer.autoClear = true;
-      this.threeRenderer.setPixelRatio(1);  // handle pixel ratio externally
+      this.threeRenderer.setPixelRatio(1); // handle pixel ratio externally
 
       this.threeRenderer.debug = {
         checkShaderErrors: !!options.debug,
-        onShaderError: null
+        onShaderError: null,
       };
 
       // ACESFilmicToneMapping appears to be the most "saturated",
@@ -163,16 +177,20 @@ export class Renderer extends
       console.warn(error);
     }
 
-    this.arRenderer = this.canRender ? new ARRenderer(this) : null as any;
-    this.textureUtils =
-        this.canRender ? new TextureUtils(this.threeRenderer) : null;
+    this.arRenderer = this.canRender ? new ARRenderer(this) : (null as any);
+    this.textureUtils = this.canRender
+      ? new TextureUtils(this.threeRenderer)
+      : null;
     if (this.canRender) {
       CachingGLTFLoader.initializeKTX2Loader(this.threeRenderer);
+      this.loader.initializeProgressive(this.threeRenderer);
     }
 
-    this.canvas3D.addEventListener('webglcontextlost', this.onWebGLContextLost);
+    this.canvas3D.addEventListener("webglcontextlost", this.onWebGLContextLost);
     this.canvas3D.addEventListener(
-        'webglcontextrestored', this.onWebGLContextRestored);
+      "webglcontextrestored",
+      this.onWebGLContextRestored,
+    );
 
     this.updateRendererSize();
   }
@@ -189,8 +207,9 @@ export class Renderer extends
       scene.canvas.height = size.y;
 
       if (this.scenes.size > 0) {
-        this.threeRenderer.setAnimationLoop(
-            (time: number, frame?: any) => this.render(time, frame));
+        this.threeRenderer.setAnimationLoop((time: number, frame?: any) =>
+          this.render(time, frame),
+        );
       }
     }
   }
@@ -208,9 +227,9 @@ export class Renderer extends
   }
 
   displayCanvas(scene: ModelScene): HTMLCanvasElement {
-    return scene.element.modelIsVisible && !this.multipleScenesVisible ?
-        this.canvas3D :
-        scene.element[$canvas];
+    return scene.element.modelIsVisible && !this.multipleScenesVisible
+      ? this.canvas3D
+      : scene.element[$canvas];
   }
 
   /**
@@ -220,11 +239,11 @@ export class Renderer extends
    * renderer's result into it.
    */
   private countVisibleScenes() {
-    const {canvas3D} = this;
+    const { canvas3D } = this;
     let visibleScenes = 0;
     let canvas3DScene = null;
     for (const scene of this.scenes) {
-      const {element} = scene;
+      const { element } = scene;
       if (element.modelIsVisible && scene.externalRenderer == null) {
         ++visibleScenes;
       }
@@ -236,10 +255,10 @@ export class Renderer extends
 
     if (canvas3DScene != null) {
       const newlyMultiple =
-          multipleScenesVisible && !this.multipleScenesVisible;
+        multipleScenesVisible && !this.multipleScenesVisible;
       const disappearing = !canvas3DScene.element.modelIsVisible;
       if (newlyMultiple || disappearing) {
-        const {width, height} = this.sceneSize(canvas3DScene);
+        const { width, height } = this.sceneSize(canvas3DScene);
         this.copyPixels(canvas3DScene, width, height);
         canvas3D.parentElement!.removeChild(canvas3D);
       }
@@ -258,7 +277,7 @@ export class Renderer extends
       // specified by % width do not fire a resize event even though their CSS
       // pixel dimensions change, so we force them to update their size here.
       for (const scene of this.scenes) {
-        const {element} = scene;
+        const { element } = scene;
         element[$updateSize](element.getBoundingClientRect());
       }
     }
@@ -288,7 +307,7 @@ export class Renderer extends
     // larger than the element that contains them, but the overflow is hidden
     // and only the portion that is shown is copied over.
     for (const scene of this.scenes) {
-      const {canvas} = scene;
+      const { canvas } = scene;
       canvas.width = width;
       canvas.height = height;
       scene.forceRescale();
@@ -300,21 +319,24 @@ export class Renderer extends
     const scaleStep = this.scaleStep;
 
     this.avgFrameDuration += clamp(
-        DURATION_DECAY * (delta - this.avgFrameDuration),
-        -MAX_AVG_CHANGE_MS,
-        MAX_AVG_CHANGE_MS);
+      DURATION_DECAY * (delta - this.avgFrameDuration),
+      -MAX_AVG_CHANGE_MS,
+      MAX_AVG_CHANGE_MS,
+    );
 
     if (this.avgFrameDuration > HIGH_FRAME_DURATION_MS) {
       ++this.scaleStep;
     } else if (
-        this.avgFrameDuration < LOW_FRAME_DURATION_MS && this.scaleStep > 0) {
+      this.avgFrameDuration < LOW_FRAME_DURATION_MS &&
+      this.scaleStep > 0
+    ) {
       --this.scaleStep;
     }
     this.scaleStep = Math.min(this.scaleStep, this.lastStep);
 
     if (scaleStep !== this.scaleStep) {
       this.avgFrameDuration =
-          (HIGH_FRAME_DURATION_MS + LOW_FRAME_DURATION_MS) / 2;
+        (HIGH_FRAME_DURATION_MS + LOW_FRAME_DURATION_MS) / 2;
     }
   }
 
@@ -341,50 +363,68 @@ export class Renderer extends
     const width = Math.ceil(this.width / scale);
     const height = Math.ceil(this.height / scale);
 
-    const {style} = scene.canvas;
+    const { style } = scene.canvas;
     style.width = `${width}px`;
     style.height = `${height}px`;
     this.canvas3D.style.width = `${width}px`;
     this.canvas3D.style.height = `${height}px`;
 
     const renderedDpr = this.dpr * scale;
-    const reason = scale < 1                 ? 'GPU throttling' :
-        this.dpr !== window.devicePixelRatio ? 'No meta viewport tag' :
-                                               '';
-    scene.element.dispatchEvent(new CustomEvent('render-scale', {
-      detail: {
-        reportedDpr: window.devicePixelRatio,
-        renderedDpr: renderedDpr,
-        minimumDpr: this.dpr * SCALE_STEPS[this.lastStep],
-        pixelWidth: Math.ceil(scene.width * renderedDpr),
-        pixelHeight: Math.ceil(scene.height * renderedDpr),
-        reason: reason
-      }
-    }));
+    const reason =
+      scale < 1
+        ? "GPU throttling"
+        : this.dpr !== window.devicePixelRatio
+          ? "No meta viewport tag"
+          : "";
+    scene.element.dispatchEvent(
+      new CustomEvent("render-scale", {
+        detail: {
+          reportedDpr: window.devicePixelRatio,
+          renderedDpr: renderedDpr,
+          minimumDpr: this.dpr * SCALE_STEPS[this.lastStep],
+          pixelWidth: Math.ceil(scene.width * renderedDpr),
+          pixelHeight: Math.ceil(scene.height * renderedDpr),
+          reason: reason,
+        },
+      }),
+    );
   }
 
   private sceneSize(scene: ModelScene) {
-    const {dpr} = this;
+    const { dpr } = this;
     const scaleFactor = SCALE_STEPS[scene.scaleStep];
     // We avoid using the Three.js PixelRatio and handle it ourselves here so
     // that we can do proper rounding and avoid white boundary pixels.
     const width = Math.min(
-        Math.ceil(scene.width * scaleFactor * dpr), this.canvas3D.width);
+      Math.ceil(scene.width * scaleFactor * dpr),
+      this.canvas3D.width,
+    );
     const height = Math.min(
-        Math.ceil(scene.height * scaleFactor * dpr), this.canvas3D.height);
-    return {width, height};
+      Math.ceil(scene.height * scaleFactor * dpr),
+      this.canvas3D.height,
+    );
+    return { width, height };
   }
 
   private copyPixels(scene: ModelScene, width: number, height: number) {
     const context2D = scene.context;
     if (context2D == null) {
-      console.log('could not acquire 2d context');
+      console.log("could not acquire 2d context");
       return;
     }
     context2D.clearRect(0, 0, width, height);
     context2D.drawImage(
-        this.canvas3D, 0, 0, width, height, 0, 0, width, height);
-    scene.canvas.classList.add('show');
+      this.canvas3D,
+      0,
+      0,
+      width,
+      height,
+      0,
+      0,
+      width,
+      height,
+    );
+    scene.canvas.classList.add("show");
   }
 
   /**
@@ -413,19 +453,20 @@ export class Renderer extends
    * the time that has passed since the last rendered frame.
    */
   preRender(scene: ModelScene, t: number, delta: number) {
-    const {element, exposure, toneMapping} = scene;
+    const { element, exposure, toneMapping } = scene;
 
     element[$tick](t, delta);
 
     const exposureIsNumber =
-        typeof exposure === 'number' && !Number.isNaN(exposure);
+      typeof exposure === "number" && !Number.isNaN(exposure);
     const env = element.environmentImage;
     const sky = element.skyboxImage;
-    const compensateExposure = toneMapping === NeutralToneMapping &&
-        (env === 'neutral' || env === 'legacy' || (!env && !sky));
+    const compensateExposure =
+      toneMapping === NeutralToneMapping &&
+      (env === "neutral" || env === "legacy" || (!env && !sky));
     this.threeRenderer.toneMappingExposure =
-        (exposureIsNumber ? exposure : 1.0) *
-        (compensateExposure ? COMMERCE_EXPOSURE : 1.0);
+      (exposureIsNumber ? exposure : 1.0) *
+      (compensateExposure ? COMMERCE_EXPOSURE : 1.0);
   }
 
   render(t: number, frame?: XRFrame) {
@@ -450,12 +491,14 @@ export class Renderer extends
       this.renderedLastFrame = false;
     }
 
-    const {canvas3D} = this;
+    const { canvas3D } = this;
 
     for (const scene of this.orderedScenes()) {
-      const {element} = scene;
-      if (!element.loaded ||
-          (!element.modelIsVisible && scene.renderCount > 0)) {
+      const { element } = scene;
+      if (
+        !element.loaded ||
+        (!element.modelIsVisible && scene.renderCount > 0)
+      ) {
         continue;
       }
 
@@ -468,7 +511,7 @@ export class Renderer extends
       if (scene.externalRenderer != null) {
         const camera = scene.getCamera();
         camera.updateMatrix();
-        const {matrix, projectionMatrix} = camera;
+        const { matrix, projectionMatrix } = camera;
         const viewMatrix = matrix.elements.slice();
         const target = scene.getTarget();
         viewMatrix[12] += target.x;
@@ -477,7 +520,7 @@ export class Renderer extends
 
         scene.externalRenderer.render({
           viewMatrix: viewMatrix,
-          projectionMatrix: projectionMatrix.elements
+          projectionMatrix: projectionMatrix.elements,
         });
         continue;
       }
@@ -492,7 +535,7 @@ export class Renderer extends
         }
       }
 
-      const {width, height} = this.sceneSize(scene);
+      const { width, height } = this.sceneSize(scene);
 
       scene.renderShadow(this.threeRenderer);
 
@@ -500,21 +543,26 @@ export class Renderer extends
       // clearing the depth from a different buffer
       this.threeRenderer.setRenderTarget(null);
       this.threeRenderer.setViewport(
-          0, Math.ceil(this.height * this.dpr) - height, width, height);
+        0,
+        Math.ceil(this.height * this.dpr) - height,
+        width,
+        height,
+      );
       if (scene.effectRenderer != null) {
         scene.effectRenderer.render(delta);
       } else {
-        this.threeRenderer.autoClear =
-            true;  // this might get reset by the effectRenderer
+        this.threeRenderer.autoClear = true; // this might get reset by the effectRenderer
         this.threeRenderer.toneMapping = scene.toneMapping;
         this.threeRenderer.render(scene, scene.camera);
       }
-      if (this.multipleScenesVisible ||
-          (!scene.element.modelIsVisible && scene.renderCount === 0)) {
+      if (
+        this.multipleScenesVisible ||
+        (!scene.element.modelIsVisible && scene.renderCount === 0)
+      ) {
         this.copyPixels(scene, width, height);
       } else if (canvas3D.parentElement !== scene.canvas.parentElement) {
         scene.canvas.parentElement!.appendChild(canvas3D);
-        scene.canvas.classList.remove('show');
+        scene.canvas.classList.remove("show");
       }
 
       scene.hasRendered();
@@ -541,22 +589,29 @@ export class Renderer extends
     }
 
     this.canvas3D.removeEventListener(
-        'webglcontextlost', this.onWebGLContextLost);
+      "webglcontextlost",
+      this.onWebGLContextLost,
+    );
     this.canvas3D.removeEventListener(
-        'webglcontextrestored', this.onWebGLContextRestored);
+      "webglcontextrestored",
+      this.onWebGLContextRestored,
+    );
 
     return elements;
   }
 
   onWebGLContextLost = (event: Event) => {
-    this.dispatchEvent(
-        {type: 'contextlost', sourceEvent: event} as ContextLostEvent);
+    this.dispatchEvent({
+      type: "contextlost",
+      sourceEvent: event,
+    } as ContextLostEvent);
   };
 
   onWebGLContextRestored = () => {
     this.textureUtils?.dispose();
-    this.textureUtils =
-        this.canRender ? new TextureUtils(this.threeRenderer) : null;
+    this.textureUtils = this.canRender
+      ? new TextureUtils(this.threeRenderer)
+      : null;
     for (const scene of this.scenes) {
       (scene.element as any)[$updateEnvironment]();
     }

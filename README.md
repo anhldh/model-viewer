@@ -1,100 +1,66 @@
-# `<model-viewer>`
+# @anhldh/model-viewer
 
- [![Min Zip](https://badgen.net/bundlephobia/minzip/@google/model-viewer)](https://bundlephobia.com/result?p=@google/model-viewer)
- [![Latest Release](https://img.shields.io/github/v/release/google/model-viewer)](https://github.com/google/model-viewer/releases)
- [![NPM Package](https://img.shields.io/npm/v/@google/model-viewer)](https://www.npmjs.com/package/@google/model-viewer)
+A fork of [`@google/model-viewer`](https://modelviewer.dev/) that keeps the `<model-viewer>` web component and adds two capabilities:
 
- [![follow on Twitter](https://img.shields.io/twitter/follow/modelviewer?style=social&logo=twitter)](https://twitter.com/intent/follow?screen_name=modelviewer)
- [![Github Discussions](https://img.shields.io/github/stars/google/model-viewer.svg?style=social&label=Star&maxAge=2592000)](https://github.com/google/model-viewer/discussions)
+- **`KHR_animation_pointer` support** — animate material, camera, light and other glTF properties through the animation pointer extension, beyond plain node transforms.
+- **LOD (Level of Detail) loading** — progressively load lighter geometry and textures first, then swap in higher detail, powered by [`@anhldh/gltf-lod-loader`](https://www.npmjs.com/package/@anhldh/gltf-lod-loader).
 
-`<model-viewer>` is a web component that makes rendering interactive 3D
-models - optionally in AR - easy to do, on as many browsers and devices as possible.
-`<model-viewer>` strives to give you great defaults for rendering quality and
-performance.
+Only the `<model-viewer>` component is forked from upstream — the other `@google/model-viewer` packages are not included. Anything not described here behaves exactly as documented at [modelviewer.dev](https://modelviewer.dev/).
 
-As new standards and APIs become available `<model-viewer>` will be improved
-to take advantage of them. If possible, fallbacks and polyfills will be
-supported to provide a seamless development experience.
+## Installation
 
-[Demo](https://model-viewer.glitch.me) • [Documentation](https://modelviewer.dev/) • [Quality Comparisons](https://github.khronos.org/glTF-Render-Fidelity/comparison/) (courtesy of Khronos)
+```bash
+# npm
+npm install three @anhldh/model-viewer
 
+# yarn
+yarn add three @anhldh/model-viewer
 
-## Installing
+# pnpm
+pnpm add three @anhldh/model-viewer
 
-### NPM
-
-The `<model-viewer>` web component can be installed from [NPM](https://npmjs.org):
-
-```sh
-# install peer dependency ThreeJS
-npm install three 
-# install package
-npm install @google/model-viewer
+# bun
+bun add three @anhldh/model-viewer
 ```
 
-Finally, include the `<model-viewer>` script in your project.
+`three` is a peer dependency (`>=0.170.0 <0.185.0`). This fork is tested against a specific three.js range — keep your three.js version within it to avoid upstream breaking changes.
+
+## Usage
+
+Import once to register the custom element, then use `<model-viewer>` in your markup:
 
 ```js
-import '@google/model-viewer';
+import "@anhldh/model-viewer";
 ```
-
-### CDN
-
-It can also be used directly from various free CDNs such as [jsDelivr](https://www.jsdelivr.com/package/npm/@google/model-viewer) and Google's own [hosted libraries](https://developers.google.com/speed/libraries#model-viewer):
 
 ```html
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/{{MODELVIEWER_VERSION}}/model-viewer.min.js"></script>
+<model-viewer
+  src="https://yourdomain.com/model.glb"
+  camera-controls
+  autoplay
+></model-viewer>
 ```
 
-For more detailed usage documentation and live examples, please visit our docs
-at [modelviewer.dev](https://modelviewer.dev)!
+### `KHR_animation_pointer`
 
-### Important note about versions
-Our goal for `<model-viewer>` is to be a consistent, stable part of your web
-platform while continuing to deliver cutting-edge features. We’ll always try
-to minimize breaking changes, and to keep the component backwards compatible.
-See our [guide to contributing](../../CONTRIBUTING.md#Stability) for more
-information on backwards compatibility.
+Models exported with the `KHR_animation_pointer` extension animate automatically — material colors, opacity, camera and light parameters, and other pointer-targeted properties are driven by the model's animation tracks. Use the standard playback API as usual:
 
-For your production site you may want the extra stability that comes by
-pinning to a specific version, and upgrading on your own schedule (after
-testing).
+```js
+const viewer = document.querySelector("model-viewer");
+viewer.animationName = "MyAnimation";
+viewer.play();
+```
 
-If you’ve installed via [NPM](https://www.npmjs.com/package/@google/model-viewer), you’re all set - you’ll only
-upgrade when you run [`npm update`](https://docs.npmjs.com/cli/update.html).
-Note that three.js is a peer dependency, so that must also be installed, but can
-be shared with other bundled code. Note that `<model-viewer>` requires the
-version of three.js we test on to maintain quality, due to frequent upstream
-breaking changes. We strongly recommend you keep your three.js version locked to
-`<model-viewer>`'s. If you must use a different version, npm will give you an
-error which you can work around using their `--legacy-peer-deps` option, which
-will allow you to go outside of our version range. Please do not file issues if
-you use this option. 
+### LOD loading
 
-## Browser Support
+LOD-enabled models load progressively: a low-detail version appears first, then higher-detail meshes and textures stream in. This works with models prepared for `@anhldh/gltf-lod-loader`.
 
-`<model-viewer>` is supported on the last 2 major versions of all evergreen
-desktop and mobile browsers.
+> **TODO:** document how LOD is toggled — automatic on load, or via an attribute such as `lod` / a JS property. Fill in once finalized.
 
-|               | <img src="https://github.com/alrra/browser-logos/raw/master/src/chrome/chrome_32x32.png" width="16"> Chrome | <img src="https://github.com/alrra/browser-logos/raw/master/src/firefox/firefox_32x32.png" width="16"> Firefox | <img src="https://github.com/alrra/browser-logos/raw/master/src/safari/safari_32x32.png" width="16"> Safari | <img src="https://github.com/alrra/browser-logos/raw/master/src/edge/edge_32x32.png" width="16"> Edge |
-| -------- | --- | --- | --- | --- |
-| Desktop  | ✅  | ✅  | ✅  | ✅  |
-| Mobile   | ✅  | ✅  | ✅  | ✅  |
+## Versioning
 
-`<model-viewer>` builds upon standard web platform APIs so that the performance,
-capabilities and compatibility of the library get better as the web evolves.
+This is a fork and is versioned independently of upstream `@google/model-viewer`. Breaking changes follow semver on this package, not on the original.
 
-## Development
+## License
 
-To get started, follow the instructions in [the main README.md file](../../README.md).
-
-The following commands are available when developing `<model-viewer>`:
-
-Command                         | Description
-------------------------------- | -----------
-`npm run build`                 | Builds all `<model-viewer>` distributable files
-`npm run build:dev`             | Builds a subset of distributable files (faster than `npm run build`)
-`npm run test`                  | Run `<model-viewer>` unit tests
-`npm run clean`                 | Deletes all build artifacts
-`npm run dev`                   | Starts `tsc` and `rollup` in "watch" mode, causing artifacts to automatically rebuild upon incremental changes
-
+Apache-2.0, inherited from [`@google/model-viewer`](https://github.com/google/model-viewer).

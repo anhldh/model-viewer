@@ -13,6 +13,11 @@
  * limitations under the License.
  */
 
+/* Modifications copyright 2026 anhldh
+ * - Added KHR_animation_pointer support
+ * - Added LOD loading via @anhldh/gltf-lod-loader
+ */
+
 import { EventDispatcher, Texture, WebGLRenderer } from "three";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
