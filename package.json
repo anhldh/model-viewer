@@ -1,6 +1,6 @@
 {
   "name": "@anhldh/model-viewer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Fork of @google/model-viewer with custom LOD and animation pointer support",
   "license": "Apache-2.0",
   "engines": {
